@@ -3,10 +3,14 @@ import { getCollection } from "astro:content";
 
 export async function getStaticPaths() {
   const pages = await getCollection("pages");
-  return pages.map((entry) => ({
-    params: { slug: entry.id },
-    props: { entry },
-  }));
+  return pages.map((entry) => {
+    // `index` maps to the site root ("/"), everything else to "/<id>/".
+    const slug = entry.id.replace(/index$/, "");
+    return {
+      params: { slug: slug.length ? slug : undefined },
+      props: { entry },
+    };
+  });
 }
 
 const { entry } = Astro.props;
