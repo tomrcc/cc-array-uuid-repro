@@ -24,9 +24,20 @@ const items = entry.data.items ?? [];
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{entry.data.title}</title>
     <style>
-      body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem; }
-      li { margin: 0.5rem 0; }
-      code { color: #666; font-size: 0.8em; margin-left: 0.5rem; }
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 40rem;
+        margin: 2rem auto;
+        padding: 0 1rem;
+      }
+      li {
+        margin: 0.5rem 0;
+      }
+      code {
+        color: #666;
+        font-size: 0.8em;
+        margin-left: 0.5rem;
+      }
     </style>
   </head>
   <body>
@@ -35,14 +46,18 @@ const items = entry.data.items ?? [];
       <p>
         Add an item to the list in the Visual Editor, then run the console
         snippet from the README. Each item exposes its <code>_uuid</code> through
-        <strong>two separate attributes</strong> so we can tell the mechanisms
-        apart. Nothing here is Rosey- or RCC-related.
+        <strong>two separate attributes</strong> so we can tell the mechanisms apart.
+        Nothing here is Rosey- or RCC-related.
       </p>
       <ul>
-        <li><code>data-ns-build</code> — set <strong>only at build time</strong>
-          (<code>={"{item._uuid}"}</code>), no binding.</li>
-        <li><code>data-ns-bound</code> — set <strong>only via the binding</strong>
-          (<code>data-prop-data-ns-bound="_uuid"</code>), no build-time value.</li>
+        <li>
+          <code>data-ns-build</code> — set <strong>only at build time</strong>
+          (<code>={"{item._uuid}"}</code>), no binding.
+        </li>
+        <li>
+          <code>data-ns-bound</code> — set <strong>only via the binding</strong>
+          (<code>data-prop-data-ns-bound="_uuid"</code>), no build-time value.
+        </li>
       </ul>
 
       <!--
@@ -66,9 +81,10 @@ const items = entry.data.items ?? [];
             <li
               data-editable="array-item"
               data-ns-build={item._uuid}
-              data-prop-data-ns-bound="_uuid"
-            >
-              <span data-editable="text" data-prop="label">{item.label}</span>
+              data-ns-bound={item._uuid}>
+              <span data-editable="text" data-prop="label">
+                {item.label}
+              </span>
               <code>(build-time _uuid: {item._uuid})</code>
             </li>
           ))
