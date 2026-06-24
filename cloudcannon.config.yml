@@ -25,7 +25,7 @@ _structures:
           label: New item
         _inputs:
           _uuid:
-            hidden: true
+            hidden: false
             instance_value: UUID
           label:
             type: text
