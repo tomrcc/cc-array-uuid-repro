@@ -31,8 +31,14 @@ const blocks = entry.data.content_blocks ?? [];
         margin: 2rem auto;
         padding: 0 1rem;
       }
-      li { margin: 0.5rem 0; }
-      code { color: #666; font-size: 0.8em; margin-left: 0.5rem; }
+      li {
+        margin: 0.5rem 0;
+      }
+      code {
+        color: #666;
+        font-size: 0.8em;
+        margin-left: 0.5rem;
+      }
     </style>
   </head>
   <body>
@@ -49,8 +55,8 @@ const blocks = entry.data.content_blocks ?? [];
       <p>
         The list lives inside a <strong>registered component</strong>
         (<code>item-list</code>), placed via a page-builder
-        <code>content_blocks</code> array — the same way the real testimonial
-        component (which exhibits the bug) is wrapped. Each item's
+        <code>content_blocks</code> array — the same way the real testimonial component
+        (which exhibits the bug) is wrapped. Each item's
         <code>data-ns-bound</code> is <strong>computed markup</strong>, not its
         own editable region, so it only updates when the parent component
         re-renders. Add / reorder items and watch whether
@@ -66,15 +72,14 @@ const blocks = entry.data.content_blocks ?? [];
       <div
         data-editable="array"
         data-prop="content_blocks"
-        data-component-key="_name"
-        data-id-key="_name"
-      >
+        data-component-key="_name">
+        <template>
+          <editable-array-item data-component="_name"> </editable-array-item>
+        </template>
         {
           blocks.map((block) => (
-            <editable-array-item data-component={block._name} data-id={block._name}>
-              <editable-component data-component={block._name} data-prop="">
-                {block._name === "item-list" && <ItemList items={block.items} />}
-              </editable-component>
+            <editable-array-item data-component={block._name}>
+              {block._name === "item-list" && <ItemList items={block.items} />}
             </editable-array-item>
           ))
         }
