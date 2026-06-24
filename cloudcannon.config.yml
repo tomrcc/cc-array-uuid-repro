@@ -1,0 +1,31 @@
+source: .
+
+collections_config:
+  pages:
+    path: src/content/pages
+    icon: wysiwyg
+    url: "/[slug]/"
+    _enabled_editors:
+      - visual
+    # The array's items come from a structure whose _uuid is auto-populated on
+    # creation. This is the ONLY thing tying an item to a stable id — same as a
+    # real page-builder array. No Rosey, no RCC.
+    _inputs:
+      items:
+        type: array
+        options:
+          structures: _structures.item
+
+_structures:
+  item:
+    values:
+      - label: List item
+        value:
+          _uuid:
+          label: New item
+        _inputs:
+          _uuid:
+            hidden: true
+            instance_value: UUID
+          label:
+            type: text
