@@ -44,10 +44,9 @@ const items = entry.data.items ?? [];
     <main>
       <h1>{entry.data.title}</h1>
       <p>
-        Add an item to the list in the Visual Editor, then run the console
-        snippet from the README. Each item exposes its <code>_uuid</code> through
-        <strong>two separate attributes</strong> so we can tell the mechanisms apart.
-        Nothing here is Rosey- or RCC-related.
+        Add an item to the list in the Visual Editor, and inspect in the dev
+        tools. As array items are dragged around they should be taking their
+        uuids with them, but they appear to stay in place.
       </p>
       <ul>
         <li>
@@ -55,8 +54,9 @@ const items = entry.data.items ?? [];
           (<code>={"{item._uuid}"}</code>), no binding.
         </li>
         <li>
-          <code>data-ns-bound</code> — set <strong>only via the binding</strong>
-          (<code>data-prop-data-ns-bound="_uuid"</code>), no build-time value.
+          <code>data-ns-bound</code> — set <strong> via the binding</strong>
+          (<code>data-prop-data-ns-bound="_uuid"</code>), and a build-time
+          value.
         </li>
       </ul>
 
