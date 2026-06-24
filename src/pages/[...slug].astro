@@ -71,18 +71,9 @@ const items = entry.data.items ?? [];
             (the data-prop-* question — also check whether it stamps existing items at all)
       -->
       <ul data-editable="array" data-prop="items">
-        <template>
-          <li data-editable="array-item" data-prop-data-ns-bound="_uuid">
-            <span data-editable="text" data-prop="label"></span>
-          </li>
-        </template>
         {
           items.map((item) => (
-            <li
-              data-editable="array-item"
-              data-ns-build={item._uuid}
-              data-prop-data-ns-bound="_uuid"
-              data-ns-bound={item._uuid}>
+            <li data-editable="array-item" data-ns-bound={item._uuid}>
               <span data-editable="text" data-prop="label">
                 {item.label}
               </span>
