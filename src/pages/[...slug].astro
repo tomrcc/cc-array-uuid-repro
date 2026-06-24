@@ -81,11 +81,12 @@ const items = entry.data.items ?? [];
             <li
               data-editable="array-item"
               data-ns-build={item._uuid}
+              data-prop-data-ns-bound="_uuid"
               data-ns-bound={item._uuid}>
               <span data-editable="text" data-prop="label">
                 {item.label}
               </span>
-              <code>(build-time _uuid: {item._uuid})</code>
+              <code>(_uuid: {item._uuid})</code>
             </li>
           ))
         }
