@@ -12,10 +12,18 @@ const { items = [] } = Astro.props as { items?: Item[] };
 ---
 
 <ul data-editable="array" data-prop="items">
+  <template>
+    <li data-editable="array-item">
+      <span data-editable="text" data-prop="label"></span>
+      <code></code>
+    </li>
+  </template>
   {
     items.map((item) => (
       <li data-editable="array-item" data-ns-bound={item._uuid}>
-        <span data-editable="text" data-prop="label">{item.label}</span>
+        <span data-editable="text" data-prop="label">
+          {item.label}
+        </span>
         <code>(_uuid: {item._uuid})</code>
       </li>
     ))
