@@ -3,26 +3,42 @@
 A minimal Astro + CloudCannon Visual Editor site — **no Rosey, no RCC** — that
 isolates one question:
 
-> When you add a new item to an editable array, does CloudCannon give the new
-> item's DOM the *new* item's `_uuid` (via re-render or `data-prop-*` binding),
-> or does it **clone a sibling's DOM** and leave a stale/duplicate attribute?
+> When you add / reorder items in an editable array that's rendered by a
+> **registered component**, does CloudCannon **re-render the component** so each
+> item's derived markup reflects its own data — or does it **clone a sibling's
+> DOM** and leave derived attributes stale/duplicated until the editor reloads?
 
-If it clones, then any attribute *derived from the item's identity* (here a
-neutral `data-demo-ns`, in the real connector `data-rosey-ns`) is wrong in-session
-until the editor reloads. That would confirm the issue is a **Visual Editor
-behaviour**, independent of the Rosey CloudCannon Connector.
+The derived attribute here is a neutral `data-ns-bound` (in the real connector
+it's `data-rosey-ns`). If it goes stale, that confirms the issue is a **Visual
+Editor re-render behaviour**, independent of the Rosey CloudCannon Connector.
+
+## Why it's wrapped in a component (important)
+
+A plain editable array does **not** re-render its item contents — per the
+editable-regions docs, "primitive editables update their own DOM slice but can't
+re-render the surrounding template." Making the `_uuid` display its own editable
+region would let CC update that one slice and **mask the bug**. The real-world
+case is computed markup (a derived attribute) that only updates when its
+**parent component** re-renders. So the array is wrapped in a registered
+component (`item-list`), placed via a page-builder `content_blocks` array —
+exactly how the testimonial component (which exhibits the bug) is wrapped.
 
 ## What's set up
 
-- `src/content/pages/home.md` — one page with an `items` array (A, B, C), each
-  item has a CloudCannon-managed `_uuid` (`instance_value: UUID`) + a `label`.
-- `src/pages/[slug].astro` — renders the array as `data-editable="array"`. Each
-  `<li>` exposes its `_uuid` through **two separate attributes** so the two
-  mechanisms can be told apart:
-  - `data-ns-build={item._uuid}` — set **only at build time**, no binding
-  - `data-ns-bound` via `data-prop-data-ns-bound="_uuid"` — set **only by the
-    CloudCannon live attribute binding**, no build-time value
-- `cloudcannon.config.yml` — `pages` collection with the array structure.
+- `src/content/pages/index.md` — a `content_blocks` array with one `item-list`
+  block; the block holds an `items` array (A, B, C), each item has a
+  CloudCannon-managed `_uuid` (`instance_value: UUID`) + a `label`.
+- `src/components/ItemList.astro` — the registered component. Renders the `items`
+  array; each `<li>` has `data-ns-bound={item._uuid}` — **computed markup, not its
+  own editable region** — plus a `data-editable="text"` label so there's
+  something directly editable for contrast.
+- `src/scripts/register-components.ts` — `registerAstroComponent("item-list", …)`
+  so CloudCannon can re-render the component from data.
+- `src/pages/[...slug].astro` — renders `content_blocks` with the
+  `editable-array` / `editable-component` wrapper, and loads the registration
+  under `window.inEditorMode`.
+- `cloudcannon.config.yml` — `pages` collection + the `blocks` and `item`
+  structures (the latter supplies `_uuid` via `instance_value`).
 
 ## Run it on CloudCannon
 
@@ -30,61 +46,48 @@ behaviour**, independent of the Rosey CloudCannon Connector.
    (build command `npx astro build`, output `dist`).
 2. Open the **Pages** collection → the "Array item _uuid binding repro" entry →
    **Visual Editor**.
-3. Click **+** on the list to add a new item (don't reload).
-4. Open the browser devtools console (the Visual Editor preview iframe) and run:
+3. **Add** a new item to the list (and/or **reorder** items) — don't reload.
+4. In the Visual Editor preview iframe's devtools console, run:
 
 ```js
-// What the DOM has on each rendered item — build-time attr vs binding attr:
+// Each rendered item's derived attribute + its visible label:
 [...document.querySelectorAll('[data-prop="items"] [data-editable="array-item"]')]
   .forEach((el, i) => console.log(i,
-    'build =', JSON.stringify(el.getAttribute('data-ns-build')),
-    'bound =', JSON.stringify(el.getAttribute('data-ns-bound')),
-    'has-bind-attr =', el.hasAttribute('data-prop-data-ns-bound')));
+    'data-ns-bound =', JSON.stringify(el.getAttribute('data-ns-bound')),
+    'label =', el.querySelector('[data-prop="label"]')?.textContent?.trim()));
 
-// What the data actually has (the source of truth):
+// The data — the source of truth for each item's real _uuid:
 window.CloudCannonAPI.useVersion('v1', true).currentFile().data.get()
-  .then(d => console.log('data _uuids:', (d.items || []).map(x => x._uuid)));
+  .then(d => console.log('data _uuids:',
+    (d.content_blocks || []).flatMap(b => (b.items || []).map(i => i._uuid))));
 ```
 
 ## What to look for
 
-Compare each item's two attributes against the fresh `_uuid` the new item has in
+Compare each item's `data-ns-bound` against the matching item's real `_uuid` in
 `data _uuids`:
 
-- **`data-ns-build` on the new item** — expected to be **empty or a duplicate of a
-  sibling** (it's baked at build; CC cloned a sibling's DOM, so it can't reflect
-  the new `_uuid`). This is the core "no re-render on add" behaviour.
-- **`data-ns-bound` on the new item** — this is the `data-prop-*` question:
-  - If it equals the new item's fresh `_uuid` → the binding *does* stamp derived
-    attributes live, and the fix is "use `data-prop-*`".
-  - If it's empty / a stale duplicate (while `has-bind-attr` is `true`) → CC does
-    **not** honour `data-prop-*` for an arbitrary attribute like this.
-- **`data-ns-bound` on the existing items** — tells you whether the binding stamps
-  the attribute *at all* (baseline), separate from the new-item question.
-- Optionally: navigate out of the Visual Editor and back in — the re-render from
-  data should put the correct UUID on `data-ns-build` (confirming re-render is the
-  only thing that currently fixes it).
+- **Bug reproduced:** after adding (or reordering), an item's `data-ns-bound` is
+  **empty or a duplicate of a sibling**, while `data _uuids` shows a fresh/correct
+  unique `_uuid` for it. → CloudCannon cloned the array-item DOM and did **not**
+  re-render the `item-list` component, so the computed attribute is stale.
+- **Not reproduced:** every item's `data-ns-bound` matches its real `_uuid`. →
+  CC re-renders the component on array changes; derived markup stays correct.
+- Then **navigate out of the Visual Editor and back in**. The component
+  re-renders from data, and `data-ns-bound` should now be correct — confirming a
+  re-render is the only thing that currently fixes it (no rebuild involved).
 
-Either way, these are plain attributes on a plain editable array — so the result
-speaks to CloudCannon's array-add / `data-prop-*` behaviour itself, not to any
-Rosey/RCC code.
+Because `data-ns-bound` is computed markup inside a registered component (not its
+own editable region), the result speaks to CloudCannon's component-re-render /
+array-add behaviour itself — not to any Rosey/RCC code.
 
 ## Notes
 
-- The `<li>` also prints its build-time `_uuid` as visible text; that text is
-  baked at build and is *also* stale on a cloned item — the console `data.get()`
-  is the source of truth for what the new item's real `_uuid` is.
-- Base hydration of `[data-editable]` regions is provided by CloudCannon's
-  visual editor at runtime (the static build intentionally has no client script —
+- Base hydration of `[data-editable]` regions is provided by CloudCannon's visual
+  editor at runtime (the static build intentionally has no hydration client —
   same as a working site; the `astro-integration` only handles build/SSR setup).
-  If for some reason the list isn't editable, add a client bootstrap to
-  `src/pages/[slug].astro` (the one thing CC normally injects):
-
-  ```astro
-  <script>
-    if (window?.inEditorMode) import("@cloudcannon/editable-regions/internal/components");
-  </script>
-  ```
-  (`components/index` self-runs `hydrateDataEditableRegions(document.body)` on
-  import. Only add this if CC isn't auto-hydrating — doubling it can clash on
-  `customElements.define`.)
+  `register-components` is loaded under `inEditorMode` purely to register the
+  component for re-rendering.
+- The `<li>` also prints its `_uuid` as visible text; that text is the same
+  computed markup as `data-ns-bound`, so it goes stale together — the console
+  `data.get()` is the source of truth for the real `_uuid`.

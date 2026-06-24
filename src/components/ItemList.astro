@@ -1,0 +1,23 @@
+---
+// A registered CloudCannon component that wraps an editable array.
+// Each item's `data-ns-bound` is COMPUTED MARKUP (a derived attribute), not its
+// own editable region — so it can only update when THIS component re-renders.
+// That's the whole point: we're testing content that re-renders via its parent
+// component, exactly like the real connector's data-rosey-ns.
+interface Item {
+  _uuid?: string;
+  label?: string;
+}
+const { items = [] } = Astro.props as { items?: Item[] };
+---
+
+<ul data-editable="array" data-prop="items">
+  {
+    items.map((item) => (
+      <li data-editable="array-item" data-ns-bound={item._uuid}>
+        <span data-editable="text" data-prop="label">{item.label}</span>
+        <code>(_uuid: {item._uuid})</code>
+      </li>
+    ))
+  }
+</ul>

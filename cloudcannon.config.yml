@@ -7,16 +7,27 @@ collections_config:
     url: "/[slug]/"
     _enabled_editors:
       - visual
-    # The array's items come from a structure whose _uuid is auto-populated on
-    # creation. This is the ONLY thing tying an item to a stable id — same as a
-    # real page-builder array. No Rosey, no RCC.
     _inputs:
+      # Outer page-builder array. Its only block type is the item-list component.
+      content_blocks:
+        type: array
+        options:
+          structures: _structures.blocks
+      # Inner array (lives on the item-list block). Its items carry a
+      # CC-managed _uuid (instance_value) — the only stable id tying an item to
+      # its data. No Rosey, no RCC.
       items:
         type: array
         options:
           structures: _structures.item
 
 _structures:
+  blocks:
+    values:
+      - label: Item list
+        value:
+          _name: item-list
+          items: []
   item:
     values:
       - label: List item

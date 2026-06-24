@@ -1,10 +1,11 @@
 ---
 import { getCollection } from "astro:content";
+import ItemList from "../components/ItemList.astro";
 
 export async function getStaticPaths() {
   const pages = await getCollection("pages");
   return pages.map((entry) => {
-    // `index` maps to the site root ("/"), everything else to "/<id>/".
+    // `index` maps to the site root ("/").
     const slug = entry.id.replace(/index$/, "");
     return {
       params: { slug: slug.length ? slug : undefined },
@@ -14,7 +15,7 @@ export async function getStaticPaths() {
 }
 
 const { entry } = Astro.props;
-const items = entry.data.items ?? [];
+const blocks = entry.data.content_blocks ?? [];
 ---
 
 <!doctype html>
@@ -30,58 +31,54 @@ const items = entry.data.items ?? [];
         margin: 2rem auto;
         padding: 0 1rem;
       }
-      li {
-        margin: 0.5rem 0;
-      }
-      code {
-        color: #666;
-        font-size: 0.8em;
-        margin-left: 0.5rem;
-      }
+      li { margin: 0.5rem 0; }
+      code { color: #666; font-size: 0.8em; margin-left: 0.5rem; }
     </style>
   </head>
   <body>
+    <script>
+      // CloudCannon Visual Editor only: register components so CC can re-render
+      // them from data. (Base [data-editable] hydration is injected by CC.)
+      if (window?.inEditorMode) {
+        import("../scripts/register-components.ts");
+      }
+    </script>
+
     <main>
       <h1>{entry.data.title}</h1>
       <p>
-        Add an item to the list in the Visual Editor, and inspect in the dev
-        tools. As array items are dragged around they should be taking their
-        uuids with them, but they appear to stay in place.
+        The list lives inside a <strong>registered component</strong>
+        (<code>item-list</code>), placed via a page-builder
+        <code>content_blocks</code> array — the same way the real testimonial
+        component (which exhibits the bug) is wrapped. Each item's
+        <code>data-ns-bound</code> is <strong>computed markup</strong>, not its
+        own editable region, so it only updates when the parent component
+        re-renders. Add / reorder items and watch whether
+        <code>data-ns-bound</code> tracks each item's real <code>_uuid</code>.
       </p>
-      <ul>
-        <li>
-          <code>data-ns-build</code> — set <strong>only at build time</strong>
-          (<code>={"{item._uuid}"}</code>), no binding.
-        </li>
-        <li>
-          <code>data-ns-bound</code> — set <strong> via the binding</strong>
-          (<code>data-prop-data-ns-bound="_uuid"</code>), and a build-time
-          value.
-        </li>
-      </ul>
 
       <!--
-        Editable array bound to the current file's `items` frontmatter.
-        Two independent attributes per item:
-          - data-ns-build={item._uuid}          build-time only
-          - data-prop-data-ns-bound="_uuid"      binding only (sets data-ns-bound)
-        So on a newly-added item we can see, separately:
-          * does the build-time attr get the new uuid?  (expect: no — stale clone)
-          * does the data-prop binding stamp data-ns-bound with the new uuid?
-            (the data-prop-* question — also check whether it stamps existing items at all)
+        Page-builder array of components. The only block type is `item-list`.
+        - data-component-key="_name": which field names the component type
+        - data-id-key="_name": stable id field for matching DOM <-> data
+        The INNER `items` array (inside ItemList) is the one under test.
       -->
-      <ul data-editable="array" data-prop="items">
+      <div
+        data-editable="array"
+        data-prop="content_blocks"
+        data-component-key="_name"
+        data-id-key="_name"
+      >
         {
-          items.map((item) => (
-            <li data-editable="array-item" data-ns-bound={item._uuid}>
-              <span data-editable="text" data-prop="label">
-                {item.label}
-              </span>
-              <code>(_uuid: {item._uuid})</code>
-            </li>
+          blocks.map((block) => (
+            <editable-array-item data-component={block._name} data-id={block._name}>
+              <editable-component data-component={block._name} data-prop="">
+                {block._name === "item-list" && <ItemList items={block.items} />}
+              </editable-component>
+            </editable-array-item>
           ))
         }
-      </ul>
+      </div>
     </main>
   </body>
 </html>
